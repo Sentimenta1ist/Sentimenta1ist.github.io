@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alexander Ivanenko · AI agents &amp; automation</title>
+<meta name="description" content="Software engineer at IBM. I turn hours of manual work into systems that run on their own: AI agents, backend and small tools.">
+<meta property="og:title" content="Alexander Ivanenko · AI agents & automation">
+<meta property="og:description" content="Hours of manual work become a system. AI agents, backend and small tools that save hours.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#080d1a">
+<style>
+:root{--bg:#080d1a;--bg1:#0e1a35;--line:#1f2f55;--text:#e8eefb;--muted:#8fa1c4;--dim:#5a6d94;--blue:#5b8cff;--cyan:#38bdf8;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:17px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
+background-image:radial-gradient(900px 500px at 75% -5%,rgba(91,140,255,.22),transparent 70%),linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+background-size:auto,40px 40px,40px 40px;background-attachment:fixed}
+body::before{content:"";position:fixed;inset:0;background:var(--bg);opacity:.72;z-index:-1}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:28px 0;font-family:var(--mono);font-size:14px;color:var(--muted)}
+nav .links{display:flex;gap:22px}
+nav a:hover{color:var(--text)}
+.label{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan)}
+.grad{background:linear-gradient(90deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:center;padding:56px 0 72px}
+h1{font-size:clamp(34px,5vw,50px);line-height:1.08;letter-spacing:-.03em;margin:16px 0 20px}
+.lead{color:var(--muted);font-size:19px;max-width:30em}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.btn{font-family:var(--mono);font-size:14px;padding:11px 20px;border-radius:10px;border:1px solid var(--blue);background:linear-gradient(135deg,var(--bg1),var(--bg));transition:.2s}
+.btn:hover{border-color:var(--cyan);transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(90deg,var(--blue),var(--cyan));color:var(--bg);border-color:transparent;font-weight:700}
+.flow{position:relative;display:flex;justify-content:space-between;padding:30px 0 40px}
+.flow::before{content:"";position:absolute;left:30px;right:30px;top:62px;height:2px;background:repeating-linear-gradient(90deg,var(--blue) 0 6px,transparent 6px 16px);background-size:32px 2px;animation:dash 1.6s linear infinite;opacity:.8}
+@keyframes dash{to{background-position:-32px 0}}
+.node{position:relative;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted)}
+.node b{display:grid;place-items:center;width:62px;height:62px;margin:0 auto 12px;border-radius:16px;border:1.5px solid var(--blue);background:var(--bg);color:var(--cyan);font-size:15px}
+.node:last-child b{background:linear-gradient(135deg,var(--blue),var(--cyan));color:var(--bg);border-color:var(--cyan)}
+section{padding:36px 0}
+h2{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);font-weight:400;margin-bottom:22px}
+.about p{font-size:20px;line-height:1.65;max-width:46em}
+.about p+p{margin-top:16px;color:var(--muted);font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.card{position:relative;display:block;padding:24px 26px 20px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,var(--bg1),var(--bg));transition:.2s}
+.card::before{content:"";position:absolute;top:0;left:26px;width:56px;height:2px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.card:hover{border-color:var(--blue);transform:translateY(-3px);box-shadow:0 12px 40px -16px rgba(91,140,255,.5)}
+.card h3{font-family:var(--mono);font-size:18px;display:flex;justify-content:space-between}
+.card h3 span{color:var(--blue);transition:.2s}
+.card:hover h3 span{transform:translate(2px,-2px);color:var(--cyan)}
+.card p{color:var(--muted);font-size:15px;margin:10px 0 18px;min-height:3.2em}
+.lang{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.lang i{width:10px;height:10px;border-radius:50%}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chips span{font-family:var(--mono);font-size:13px;padding:6px 16px;border:1px solid var(--line);border-radius:999px;background:var(--bg1)}
+.panel img{display:block;width:100%;height:auto}
+.panel+.panel{margin-top:16px}
+.scroll{overflow-x:auto}
+.scroll img{min-width:720px}
+.older{color:var(--muted);font-size:15px;margin-top:18px}
+footer{padding:48px 0 64px;border-top:1px solid var(--line);margin-top:40px;text-align:center}
+footer h2{margin-bottom:16px}
+footer p{color:var(--muted);margin-bottom:26px}
+footer .cta{justify-content:center}
+small{display:block;margin-top:40px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+@media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:24px}.grid{grid-template-columns:1fr}.flow{padding-top:10px}.flow::before{top:42px}}
+@media(prefers-reduced-motion:reduce){.flow::before{animation:none}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav><span>sentimenta1ist</span><div class="links"><a href="#work">work</a><a href="#stack">stack</a><a href="#contact">contact</a></div></nav>
+
+<header class="hero">
+<div>
+<div class="label">Software engineer · IBM · Dublin</div>
+<h1>Hours of manual work<br><span class="grad">become a system.</span></h1>
+<p class="lead">AI agents, backend and small tools that save hours. I build automation that runs on its own, for myself and now for people and businesses.</p>
+<div class="cta"><a class="btn primary" href="#contact">Get in touch</a><a class="btn" href="#work">See my work</a></div>
+</div>
+<div class="flow" aria-hidden="true">
+<div class="node"><b>01</b>trigger</div><div class="node"><b>02</b>agent</div><div class="node"><b>03</b>tools</div><div class="node"><b>04</b>result</div>
+</div>
+</header>
+
+<section class="about">
+<h2>About</h2>
+<p>I work on AI agent orchestration at IBM. Backend by trade: Java, Spring, Kafka, and lately LLM agents, RAG and tracing.</p>
+<p>On the side I automate my own life and build small tools. Now I bring the same automation to people and businesses.</p>
+</section>
+
+<section id="work">
+<h2>Selected work</h2>
+<div class="grid">
+<a class="card" href="https://github.com/Sentimenta1ist/crumbclear"><h3>crumbclear<span>↗</span></h3><p>Chrome extension that deletes a site's cookies the moment you close its tab. Manifest V3.</p><div class="lang"><i style="background:#f1e05a"></i>JavaScript</div></a>
+<a class="card" href="https://github.com/Sentimenta1ist/vocab"><h3>vocab<span>↗</span></h3><p>English vocabulary trainer: Gemini writes the cards, SM-2 decides when you see them again.</p><div class="lang"><i style="background:#4b8bbe"></i>Python</div></a>
+<a class="card" href="https://github.com/Sentimenta1ist/transcribator"><h3>transcribator<span>↗</span></h3><p>YouTube link in, transcript and a ready LLM prompt out. Decide in 30 seconds if a video is worth an hour.</p><div class="lang"><i style="background:#4b8bbe"></i>Python</div></a>
+<a class="card" href="https://github.com/Sentimenta1ist/memoir"><h3>memoir<span>↗</span></h3><p>Evening journal as a PWA: three short blocks a day with photos. FastAPI + React.</p><div class="lang"><i style="background:#3178c6"></i>TypeScript</div></a>
+<a class="card" href="https://github.com/Sentimenta1ist/x-viral-radar"><h3>x-viral-radar<span>↗</span></h3><p>Scores posts in your X feed by how likely they are to take off, while you scroll.</p><div class="lang"><i style="background:#f1e05a"></i>JavaScript</div></a>
+<a class="card" href="https://github.com/Sentimenta1ist/x-scout"><h3>x-scout<span>↗</span></h3><p>Daily X briefing for up to 5 topics, ranked by Claude. Runs locally in a real browser.</p><div class="lang"><i style="background:#4b8bbe"></i>Python</div></a>
+</div>
+<p class="older">Older code, now archived: an x86 assembler, a SIGNAL compiler, OS simulations in Java, Lisp, numerical methods.</p>
+</section>
+
+<section>
+<h2>Second brain · last 7 days</h2>
+<div class="panel"><img src="https://raw.githubusercontent.com/Sentimenta1ist/Sentimenta1ist/master/assets/stats.svg" alt="Commits, active days, notes updated, logged events and posts published in the last 7 days"></div>
+<div class="panel scroll"><img src="https://raw.githubusercontent.com/Sentimenta1ist/Sentimenta1ist/master/assets/heatmap.svg" alt="GitHub contributions over the last 12 months"></div>
+</section>
+
+<section id="stack">
+<h2>Stack</h2>
+<div class="chips"><span>Java</span><span>Spring Boot</span><span>Kafka</span><span>Python</span><span>FastAPI</span><span>TypeScript</span><span>React</span><span>PostgreSQL</span><span>Docker</span><span>LLM agents</span><span>RAG</span><span>OpenTelemetry</span></div>
+</section>
+
+<footer id="contact">
+<h2>Contact</h2>
+<p>Have a task that eats hours every week? Tell me about it.</p>
+<div class="cta"><a class="btn primary" href="https://x.com/sentimentGod">X @sentimentGod ↗</a><a class="btn" href="https://www.linkedin.com/in/alexander-ivanenko">LinkedIn ↗</a><a class="btn" href="https://github.com/Sentimenta1ist">GitHub ↗</a></div>
+<small>© Alexander Ivanenko</small>
+</footer>
+</div>
+</body>
+</html>
