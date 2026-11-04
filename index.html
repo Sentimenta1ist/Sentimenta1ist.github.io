@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="darkreader-lock">
 <title>Alexander Ivanenko · what AI replaces, and what to do next</title>
 <meta name="description" content="Software engineer at IBM, building AI agents. Notes on what AI actually replaces at work, and what to do about it. Plus the small tools I build for myself.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#f3efe6;--paper2:#ebe6da;--ink:#1b1a17;--muted:#6f6a5f;--dim:#8a8476;--line:#d8d1c2;--red:#b3361f;
+:root{color-scheme:only light;--paper:#f3efe6;--paper2:#ebe6da;--ink:#1b1a17;--muted:#6f6a5f;--dim:#8a8476;--line:#d8d1c2;--red:#b3361f;
 --serif:Fraunces,Georgia,serif;--sans:Inter,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
@@ -49,9 +51,11 @@ h2{margin-bottom:6px}
 .card p{font-size:16px;color:var(--muted);margin-top:6px;line-height:1.5}
 .lang{font-size:13px;color:var(--dim);margin-top:12px}
 .older{font-size:15px;color:var(--dim);margin-top:22px}
-.panel{margin-top:18px;background:#0d1117;border-radius:6px;padding:16px;overflow-x:auto}
-.panel img{display:block;max-width:100%;height:auto}
-.panel.scroll img{max-width:none}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stats div{padding:18px 4px}
+.stats b{display:block;font-size:40px;font-weight:600;line-height:1.1}
+.stats span{font-family:var(--sans);font-size:13px;color:var(--dim)}
+.stats div:first-child b{color:var(--red)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 .chips span{font-size:14px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
 footer{padding:52px 0 60px}
@@ -100,9 +104,8 @@ footer small{display:block;margin-top:40px;color:var(--dim);font-size:13px}
 
 <section>
 <h2>My second brain · last 7 days</h2>
-<p>Every note, plan and decision lives in a plain-text git repo that my AI reads each session. This is what it looked like this week.</p>
-<div class="panel"><img src="https://raw.githubusercontent.com/Sentimenta1ist/Sentimenta1ist/master/assets/stats.svg" alt="Commits, active days, notes updated, logged events and posts published in the last 7 days"></div>
-<div class="panel scroll"><img src="https://raw.githubusercontent.com/Sentimenta1ist/Sentimenta1ist/master/assets/heatmap.svg" alt="GitHub contributions over the last 12 months"></div>
+<p>Every note, plan and decision lives in a plain-text git repo that my AI reads each session. Last 7 days, counted from that repo:</p>
+<div class="stats" id="stats" hidden></div>
 <div class="chips"><span>Java</span><span>Spring Boot</span><span>Kafka</span><span>Python</span><span>FastAPI</span><span>TypeScript</span><span>React</span><span>PostgreSQL</span><span>Docker</span><span>LLM agents</span><span>RAG</span><span>OpenTelemetry</span></div>
 </section>
 
@@ -120,6 +123,10 @@ function draw(sel,color,width,amp){document.querySelectorAll(sel).forEach(el=>{
  el.querySelector('svg')?.remove();const w=el.offsetWidth+14;
  el.insertAdjacentHTML('beforeend',`<svg viewBox="0 0 ${w} 12" preserveAspectRatio="none" aria-hidden="true"><path d="${wob(w,amp)}" stroke="${color}" stroke-width="${width}" fill="none" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`)})}
 function all(){draw('.x','#b3361f',4,2.5);draw('.u','#b3361f',3,1.5)}
+fetch('https://raw.githubusercontent.com/Sentimenta1ist/Sentimenta1ist/master/assets/stats.svg').then(r=>r.text()).then(t=>{
+ const d=new DOMParser().parseFromString(t,'image/svg+xml');const tx=[...d.querySelectorAll('text')].map(e=>e.textContent.trim());
+ const out=[];for(let i=0;i+1<tx.length;i++){if(/^\d+$/.test(tx[i])){out.push([tx[i],tx[i+1]]);i++}}
+ if(!out.length)return;const el=document.getElementById('stats');el.innerHTML=out.map(([n,l])=>`<div><b>${n}</b><span>${l}</span></div>`).join('');el.hidden=false}).catch(()=>{});
 (document.fonts?document.fonts.ready:Promise.resolve()).then(all);addEventListener('resize',all);
 </script>
 </body>
