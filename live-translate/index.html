@@ -114,6 +114,22 @@ async function addSegment(enText) {
 }
 
 // ---------- Recognition ----------
+// Не полагаемся на isFinal (в iOS Safari он ведёт себя непредсказуемо):
+// собираем весь текст сессии, а новую часть фиксируем по паузе в речи.
+let committedLen = 0, pauseTimer = null, lastFull = '', paused = false, startWatch = null;
+const PAUSE_MS = 1200, MAX_CHARS = 160;
+
+function fullText(results) {
+  return Array.from(results).map(r => r[0].transcript).join(' ').replace(/\s+/g, ' ').trim();
+}
+function commit() {
+  clearTimeout(pauseTimer);
+  const pending = lastFull.slice(committedLen).trim();
+  committedLen = lastFull.length;
+  interimEl.textContent = '';
+  if (pending) addSegment(pending);
+}
+
 function buildRec() {
   const r = new SR();
   r.lang = $('srcLang').value;
@@ -121,51 +137,77 @@ function buildRec() {
   r.interimResults = true;
   r.maxAlternatives = 1;
 
+  r._started = false;
+  r.onstart = () => {
+    r._started = true;
+    clearTimeout(startWatch);
+    committedLen = 0; lastFull = '';
+    paused = false;
+    setStatus('слушаю · перевод: ' + (engine === 'builtin' ? 'встроенный Chrome' : 'Google'), true);
+  };
   r.onresult = e => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const res = e.results[i];
-      const t = res[0].transcript.trim();
-      if (res.isFinal) { if (t) addSegment(t); }
-      else interim += t + ' ';
-    }
-    interimEl.textContent = interim;
+    lastFull = fullText(e.results);
+    if (lastFull.length < committedLen) committedLen = 0; // движок переписал текст сессии
+    const pending = lastFull.slice(committedLen).trim();
+    interimEl.textContent = pending;
+    const last = e.results[e.results.length - 1];
+    if (last && last.isFinal && pending.length > 40) { commit(); return; }
+    if (pending.length > MAX_CHARS) { commit(); return; }
+    clearTimeout(pauseTimer);
+    pauseTimer = setTimeout(commit, PAUSE_MS);
   };
   r.onerror = e => {
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      showWarn('Нет доступа к микрофону. Разреши микрофон для этой страницы (значок слева в адресной строке) и нажми «Слушать» снова.');
-      stop();
+      if (listening && rec === r && committedLen === 0 && !lastFull) {
+        showWarn('Нет доступа к микрофону. Разреши микрофон для этой страницы и нажми «Слушать» снова.');
+      }
     } else if (e.error === 'network') {
       setStatus('нет сети, переподключаюсь…', true);
     }
-    // 'no-speech' / 'aborted' — просто перезапустимся в onend
   };
   r.onend = () => {
-    // Chrome сам останавливает распознавание через ~минуту или после тишины — перезапускаем
-    if (listening) { try { r.start(); } catch (e) { setTimeout(() => listening && start(true), 300); } }
+    commit();
+    if (!listening || rec !== r) return;
+    if (!r._started) { showPaused(); return; } // перезапуск не удался — не зацикливаемся
+    // Пытаемся перезапуститься сами; iOS может не разрешить без нажатия
+    try {
+      rec = buildRec();
+      rec.start();
+      startWatch = setTimeout(showPaused, 1500);
+    } catch (e) { showPaused(); }
   };
   return r;
 }
 
-async function start(restart) {
+function showPaused() {
+  if (!listening) return;
+  paused = true;
+  $('toggle').textContent = '▶ Продолжить'; $('toggle').classList.remove('on');
+  setStatus('пауза — нажми «Продолжить»', false);
+}
+
+function start() {
   if (!SR) return;
-  await ensureTranslator('en', $('tgtLang').value);
+  warn.style.display = 'none';
+  listening = true; paused = false;
   rec = buildRec();
-  try { rec.start(); } catch (e) {}
-  listening = true;
+  try { rec.start(); } catch (e) {}   // старт сразу в обработчике нажатия — важно для iOS
   $('toggle').textContent = '■ Стоп'; $('toggle').classList.add('on');
-  setStatus('слушаю · перевод: ' + (engine === 'builtin' ? 'встроенный Chrome' : 'Google'), true);
+  setStatus('запускаю…', true);
+  ensureTranslator('en', $('tgtLang').value);
 }
 
 function stop() {
-  listening = false;
-  if (rec) { try { rec.stop(); } catch (e) {} }
+  listening = false; paused = false;
+  clearTimeout(startWatch);
+  const r = rec; rec = null;
+  if (r) { try { r.stop(); } catch (e) {} }
+  commit();
   $('toggle').textContent = '▶ Слушать'; $('toggle').classList.remove('on');
-  interimEl.textContent = '';
   setStatus('остановлено', false);
 }
 
-$('toggle').onclick = () => listening ? stop() : start();
+$('toggle').onclick = () => (listening && !paused) ? stop() : start();
 $('srcLang').onchange = () => { if (listening) { stop(); start(); } };
 $('tgtLang').onchange = async () => { translatorPair = ''; await ensureTranslator('en', $('tgtLang').value); };
 $('bigger').onclick = () => { size = Math.min(48, size + 2); document.documentElement.style.setProperty('--size', size + 'px'); };
