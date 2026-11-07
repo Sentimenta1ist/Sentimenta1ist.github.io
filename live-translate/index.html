@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Translate — EN → RU</title>
+<style>
+  :root { --bg:#111418; --panel:#1a1f26; --fg:#e8ecf1; --muted:#8a94a3; --accent:#4fd1a5; --red:#ff6b6b; --size:22px; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:12px 16px; background:var(--panel); border-bottom:1px solid #2a313b; }
+  button, select { background:#252c36; color:var(--fg); border:1px solid #333c48; border-radius:8px; padding:8px 14px; font-size:15px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#0b1a14; border:none; font-weight:600; }
+  button.primary.on { background:var(--red); color:#fff; }
+  .status { margin-left:auto; color:var(--muted); font-size:14px; display:flex; align-items:center; gap:8px; }
+  .dot { width:10px; height:10px; border-radius:50%; background:#555; }
+  .dot.live { background:var(--red); animation:pulse 1.2s infinite; }
+  @keyframes pulse { 50% { opacity:.3; } }
+  #feed { flex:1; overflow-y:auto; padding:16px 20px 8px; }
+  .seg { margin-bottom:18px; }
+  .seg .en { color:var(--muted); font-size:calc(var(--size) * .75); line-height:1.35; }
+  .seg .ru { font-size:var(--size); line-height:1.35; margin-top:2px; }
+  .seg .ru.pending { color:#5d6673; }
+  #interim { padding:10px 20px 16px; min-height:56px; color:var(--muted); font-style:italic; font-size:calc(var(--size) * .8); border-top:1px solid #2a313b; background:var(--panel); }
+  #warn { display:none; padding:10px 16px; background:#3a2a12; color:#ffd28a; font-size:14px; }
+  label { color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <button id="toggle" class="primary">▶ Слушать</button>
+  <label>Язык речи
+    <select id="srcLang">
+      <option value="en-US">English (US)</option>
+      <option value="en-GB">English (UK)</option>
+    </select>
+  </label>
+  <label>Перевод на
+    <select id="tgtLang">
+      <option value="ru">Русский</option>
+      <option value="uk">Українська</option>
+    </select>
+  </label>
+  <button id="smaller">A−</button>
+  <button id="bigger">A+</button>
+  <button id="clear">Очистить</button>
+  <button id="copy">Копировать всё</button>
+  <div class="status"><span id="dot" class="dot"></span><span id="statusText">остановлено</span></div>
+</header>
+<div id="warn"></div>
+<div id="feed"></div>
+<div id="interim"></div>
+
+<script>
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const $ = id => document.getElementById(id);
+const feed = $('feed'), interimEl = $('interim'), warn = $('warn');
+let rec = null, listening = false, size = 22;
+let engine = 'none', translator = null, translatorPair = '';
+
+function showWarn(msg) { warn.textContent = msg; warn.style.display = 'block'; }
+function setStatus(text, live) { $('statusText').textContent = text; $('dot').classList.toggle('live', !!live); }
+
+if (!SR) showWarn('Этот браузер не поддерживает распознавание речи. Открой страницу в Google Chrome на компьютере.');
+
+// ---------- Translation ----------
+async function ensureTranslator(src, tgt) {
+  const pair = src + '>' + tgt;
+  if (translatorPair === pair && engine !== 'none') return;
+  translatorPair = pair; translator = null; engine = 'google';
+  try {
+    if ('Translator' in self) {
+      const avail = await Translator.availability({ sourceLanguage: src, targetLanguage: tgt });
+      if (avail !== 'unavailable') {
+        translator = await Translator.create({ sourceLanguage: src, targetLanguage: tgt });
+        engine = 'builtin';
+      }
+    }
+  } catch (e) { translator = null; engine = 'google'; }
+}
+
+async function translate(text, tgt) {
+  if (engine === 'builtin' && translator) {
+    try { return await translator.translate(text); } catch (e) { engine = 'google'; }
+  }
+  try {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=' + tgt + '&dt=t&q=' + encodeURIComponent(text);
+    const r = await fetch(url);
+    const j = await r.json();
+    return j[0].map(p => p[0]).join('');
+  } catch (e) {}
+  try {
+    const r = await fetch('https://api.mymemory.translated.net/get?langpair=en|' + tgt + '&q=' + encodeURIComponent(text));
+    const j = await r.json();
+    return j.responseData.translatedText;
+  } catch (e) {}
+  return '⚠ перевод недоступен (нет сети?)';
+}
+
+// ---------- Feed ----------
+function nearBottom() { return feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120; }
+
+async function addSegment(enText) {
+  const stick = nearBottom();
+  const seg = document.createElement('div'); seg.className = 'seg';
+  const en = document.createElement('div'); en.className = 'en'; en.textContent = enText;
+  const ru = document.createElement('div'); ru.className = 'ru pending'; ru.textContent = '…';
+  seg.append(en, ru); feed.appendChild(seg);
+  if (stick) feed.scrollTop = feed.scrollHeight;
+  const tgt = $('tgtLang').value;
+  ru.textContent = await translate(enText, tgt);
+  ru.classList.remove('pending');
+  if (stick) feed.scrollTop = feed.scrollHeight;
+}
+
+// ---------- Recognition ----------
+function buildRec() {
+  const r = new SR();
+  r.lang = $('srcLang').value;
+  r.continuous = true;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+
+  r.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const res = e.results[i];
+      const t = res[0].transcript.trim();
+      if (res.isFinal) { if (t) addSegment(t); }
+      else interim += t + ' ';
+    }
+    interimEl.textContent = interim;
+  };
+  r.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      showWarn('Нет доступа к микрофону. Разреши микрофон для этой страницы (значок слева в адресной строке) и нажми «Слушать» снова.');
+      stop();
+    } else if (e.error === 'network') {
+      setStatus('нет сети, переподключаюсь…', true);
+    }
+    // 'no-speech' / 'aborted' — просто перезапустимся в onend
+  };
+  r.onend = () => {
+    // Chrome сам останавливает распознавание через ~минуту или после тишины — перезапускаем
+    if (listening) { try { r.start(); } catch (e) { setTimeout(() => listening && start(true), 300); } }
+  };
+  return r;
+}
+
+async function start(restart) {
+  if (!SR) return;
+  await ensureTranslator('en', $('tgtLang').value);
+  rec = buildRec();
+  try { rec.start(); } catch (e) {}
+  listening = true;
+  $('toggle').textContent = '■ Стоп'; $('toggle').classList.add('on');
+  setStatus('слушаю · перевод: ' + (engine === 'builtin' ? 'встроенный Chrome' : 'Google'), true);
+}
+
+function stop() {
+  listening = false;
+  if (rec) { try { rec.stop(); } catch (e) {} }
+  $('toggle').textContent = '▶ Слушать'; $('toggle').classList.remove('on');
+  interimEl.textContent = '';
+  setStatus('остановлено', false);
+}
+
+$('toggle').onclick = () => listening ? stop() : start();
+$('srcLang').onchange = () => { if (listening) { stop(); start(); } };
+$('tgtLang').onchange = async () => { translatorPair = ''; await ensureTranslator('en', $('tgtLang').value); };
+$('bigger').onclick = () => { size = Math.min(48, size + 2); document.documentElement.style.setProperty('--size', size + 'px'); };
+$('smaller').onclick = () => { size = Math.max(14, size - 2); document.documentElement.style.setProperty('--size', size + 'px'); };
+$('clear').onclick = () => { feed.innerHTML = ''; };
+$('copy').onclick = async () => {
+  const text = [...feed.querySelectorAll('.seg')].map(s => s.querySelector('.en').textContent + '\n' + s.querySelector('.ru').textContent).join('\n\n');
+  try { await navigator.clipboard.writeText(text); $('copy').textContent = 'Скопировано ✓'; setTimeout(() => $('copy').textContent = 'Копировать всё', 1500); } catch (e) {}
+};
+</script>
+</body>
+</html>
